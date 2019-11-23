@@ -3,9 +3,9 @@
 
 #include <stdio.h>
 #include <winsock2.h>
-
 #include <vector>
 #include <stdlib.h>
+#include <malloc.h>
 
 #pragma comment(lib,"ws2_32.lib") //For winsock
 #define SIO_RCVALL _WSAIOW(IOC_VENDOR,1) //this removes the need of mstcpip.h
@@ -57,13 +57,14 @@ public:
 
 		do
 		{
+			Buffer = (char*)malloc(sizeof(char) * 65536);
+
 			//sniffer소켓으로부터 패킷을 읽어온다.
 			//즉 네트워크 인터페이스로 부터 들어오는 모든 IPv4, IPv6패킷을 여기서 읽는다.
 			recvState = recvfrom(sniffer, Buffer, 65536, 0, 0, 0);
 
 			if (recvState > 0)
 			{//읽었다면
-				char* tempNode = (char*)malloc();
 				CoreUnit::packetVector.push_back(Buffer);
 				SetEvent(CoreUnit::newItemEventHandle);
 				ProcessPacket(CoreUnit::packetVector.back(), recvState);//로깅 및 카운팅 처리

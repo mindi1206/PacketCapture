@@ -385,7 +385,7 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 	std::vector<char*> v = CoreUnit::packetVector;
 	CString strProtocol;
 	int i = 1;
-	
+	struct sockaddr_in source, dest;
 
 	for (iter = v.begin(); iter != v.end(); ++iter,i++) {
 		char* packet = *iter;
@@ -400,14 +400,29 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 			idxStr.Format(_T("%d"), i);
 			mList.InsertItem(nItemNum, idxStr);
 			mList.SetItemText(nItemNum, 1, _T("time"));
-			mList.SetItemText(nItemNum, 2, _T("srcIP"));
-			mList.SetItemText(nItemNum, 3, _T("destIP"));
+
+			memset(&source, 0, sizeof(source));
+			source.sin_addr.s_addr = iphdr->ip_srcaddr;
+
+			memset(&dest, 0, sizeof(dest));
+			dest.sin_addr.s_addr = iphdr->ip_destaddr;
+
+			const char* chPtrsrcIp = inet_ntoa(source.sin_addr);
+			const char* chPtrdestIp = inet_ntoa(dest.sin_addr);
+			
+			CString srcIp	= (CString)chPtrsrcIp;
+			CString destIp	= (CString)chPtrdestIp;
+
+			mList.SetItemText(nItemNum, 2, srcIp);
+			mList.SetItemText(nItemNum, 3, destIp);
+
 			mList.SetItemText(nItemNum, 4, strProtocol);
 			mList.SetItemText(nItemNum, 5, _T("packetLen"));
 			mList.SetItemText(nItemNum, 6, _T("packetInfo"));
 		}
 	}
 }
+
 
 
 

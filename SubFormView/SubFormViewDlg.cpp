@@ -44,6 +44,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+	
 END_MESSAGE_MAP()
 
 
@@ -73,6 +74,11 @@ BEGIN_MESSAGE_MAP(CSubFormViewDlg, CDialogEx)
 	//ON_BN_CLICKED(IDC_BUTTON2, &CSubFormViewDlg::OnBnClickedButton2)
 	ON_CBN_SELCHANGE(IDC_COMBO, &CSubFormViewDlg::OnCbnSelchangeCombo)
 	ON_WM_CTLCOLOR()
+//	ON_BN_CLICKED(IDC_BUTTON_START, &CSubFormViewDlg::OnBnClickedButtonStart)
+//ON_BN_CLICKED(IDC_BUTTON_START, &CSubFormViewDlg::OnBnClickedButtonStart)
+//ON_BN_CLICKED(IDC_BUTTON_START, &CSubFormViewDlg::OnBnClickedButtonStart)
+ON_BN_CLICKED(IDC_BUTTON_START, &CSubFormViewDlg::OnBnClickedButtonStart)
+ON_BN_CLICKED(IDC_BUTTON_STOP, &CSubFormViewDlg::OnBnClickedButtonStop)
 END_MESSAGE_MAP()
 
 
@@ -153,7 +159,7 @@ BOOL CSubFormViewDlg::OnInitDialog()
 
 	std::cout << "Testing onInitDialog";
 
-	CoreUnit* core_unit = new CoreUnit();
+	CoreUnit* core_unit = CoreUnit::getInstance();
 
 	core_unit->initializer();
 	
@@ -287,4 +293,23 @@ HBRUSH CSubFormViewDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
 	// TODO:  기본값이 적당하지 않으면 다른 브러시를 반환합니다.
 	return hbr;
+}
+
+
+
+void CSubFormViewDlg::OnBnClickedButtonStart()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	std::cout << "startCapture!\n";
+	CoreUnit* core_unit = CoreUnit::getInstance();
+	core_unit->startCapture();
+}
+
+
+void CSubFormViewDlg::OnBnClickedButtonStop()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	std::cout << "endCapture\n";
+	CoreUnit* core_unit = CoreUnit::getInstance();
+	core_unit->stopCapture();
 }

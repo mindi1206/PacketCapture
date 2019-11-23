@@ -110,6 +110,7 @@
     <ClInclude Include="SubFormView.h" />
     <ClInclude Include="SubFormViewDlg.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="HeaderType.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CoreUnit.cpp" />

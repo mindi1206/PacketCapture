@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <winsock2.h>
 
+#include <vector>
+
 #pragma comment(lib,"ws2_32.lib") //For winsock
 #define SIO_RCVALL _WSAIOW(IOC_VENDOR,1) //this removes the need of mstcpip.h
 
@@ -30,6 +32,9 @@ class CoreUnit
 public:
 	static void setThreadHandle(HANDLE handle);
 	static HANDLE captureThread;
+	static std::vector<char*> packetVector;
+
+	static HANDLE newItemEventHandle;
 
 	static CoreUnit* getInstance();
 	static int initializer();
@@ -57,7 +62,9 @@ public:
 
 			if (recvState > 0)
 			{//읽었다면
-				ProcessPacket(Buffer, recvState);//로깅 및 카운팅 처리
+				CoreUnit::packetVector.push_back(Buffer);
+				SetEvent(CoreUnit::newItemEventHandle);
+				ProcessPacket(CoreUnit::packetVector.back(), recvState);//로깅 및 카운팅 처리
 			}
 			else
 			{//잘못 읽은경우 에러메세지 출력

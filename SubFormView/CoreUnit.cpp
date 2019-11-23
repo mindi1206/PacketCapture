@@ -26,6 +26,10 @@ ICMP_HDR* CoreUnit::icmpheader;
 SOCKET CoreUnit::sniffer;//RAW SOCKET¿ë º¯¼ö
 HANDLE CoreUnit::captureThread;
 
+HANDLE CoreUnit::newItemEventHandle;
+
+std::vector<char*> CoreUnit::packetVector;
+
 void CoreUnit::setThreadHandle(HANDLE handle) {
 	CoreUnit::captureThread = handle;
 }
@@ -43,6 +47,8 @@ int CoreUnit::initializer()
 		return 1;
 	}
 	printf("Winsock Initialised");
+
+	CoreUnit::newItemEventHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	return 0;
 }
@@ -150,5 +156,6 @@ void CoreUnit::stopCapture()
 }
 void CoreUnit::terminateProgram()
 {
+	CloseHandle(CoreUnit::newItemEventHandle);
 	WSACleanup();
 }

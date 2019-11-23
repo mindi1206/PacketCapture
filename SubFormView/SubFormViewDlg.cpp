@@ -23,7 +23,6 @@ class CAboutDlg : public CDialogEx
 {
 public:
 	CAboutDlg();
-
 // Dialog Data
 	enum { IDD = IDD_ABOUTBOX };
 
@@ -80,8 +79,38 @@ BEGIN_MESSAGE_MAP(CSubFormViewDlg, CDialogEx)
 //ON_BN_CLICKED(IDC_BUTTON_START, &CSubFormViewDlg::OnBnClickedButtonStart)
 ON_BN_CLICKED(IDC_BUTTON_START, &CSubFormViewDlg::OnBnClickedButtonStart)
 ON_BN_CLICKED(IDC_BUTTON_STOP, &CSubFormViewDlg::OnBnClickedButtonStop)
+ON_NOTIFY(LVN_INSERTITEM, IDC_LIST_PACKET, &CSubFormViewDlg::OnLvnInsertitemListPacket)
 END_MESSAGE_MAP()
 
+
+//==========================================
+unsigned WINAPI listviewUpdater(void* arg) {
+	std::cout << "subscribe packetCapture Event!\n";
+	int idx = 0;
+	CListCtrl* mlist = (CListCtrl*)GetDlgItem(GetParent((HWND)IDD_SUBFORMVIEW_DIALOG), IDC_LIST_PACKET);
+	for (;;) {
+		WaitForSingleObject(CoreUnit::newItemEventHandle, INFINITE);
+		
+		LVITEM item;
+		item.mask = LVIF_TEXT;
+		item.iItem = idx++;
+		item.iSubItem = 0;
+
+		SendMessage( (HWND)mlist, LVN_INSERTITEM,0, (LPARAM)&item);
+
+		//mlist->InsertItem(idx++,_T("aa"));
+
+		
+		//mlist->InsertItem(idx++, _T("asdf"));
+
+		//std::cout << CoreUnit::packetVector.back();
+	}
+
+	//CoreUnit
+
+	return 0;
+}
+//==========================================
 
 // CSubFormViewDlg message handlers
 
@@ -158,16 +187,21 @@ BOOL CSubFormViewDlg::OnInitDialog()
 	mList.InsertColumn(5, _T("패킷길이"), LVCFMT_LEFT, 100);
 	mList.InsertColumn(6, _T("패킷정보"), LVCFMT_LEFT, rect.Width() - 750);
 
+	
+
+
 	std::cout << "Testing onInitDialog";
 
 	CoreUnit* core_unit = CoreUnit::getInstance();
 
 	core_unit->initializer();
-	
-	
+
+	(HANDLE)_beginthreadex(NULL, 0, listviewUpdater, NULL, 0, NULL);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
+
+
 
 void CSubFormViewDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -305,17 +339,19 @@ unsigned WINAPI startCaptureThread(void* arg) {
 	return 0;
 }
 
+
+
 void CSubFormViewDlg::OnBnClickedButtonStart()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-
+	
 	CoreUnit::setThreadHandle((HANDLE)_beginthreadex(NULL, 0, startCaptureThread, NULL, 0, NULL));
 	if (CoreUnit::captureThread == NULL) {
 		std::cout << "capture thread init failed!\n";
 		return;
 	}
 }
-
+int idx = 0;
 
 void CSubFormViewDlg::OnBnClickedButtonStop()
 {
@@ -323,5 +359,51 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 	std::cout << "endCapture\n";
 	CoreUnit* core_unit = CoreUnit::getInstance();
 	core_unit->stopCapture();
+	
+
+	std::vector<char*>::iterator iter;
+	std::vector<char*> v = CoreUnit::packetVector;
+	CString temp;
+	int i = 1;
+	for (iter = v.begin(); iter != v.end(); ++iter,i++) {
+		char* packet = *iter;
+		IPV4_HDR* iphdr = (IPV4_HDR*)packet;
+		int protocol = iphdr->ip_protocol;
+
+		temp.Format(_T("%d"), i);
+		mList.InsertItem(i, temp);
+		//mList.SetItemText(i, 1, _T("idx"));
+		mList.SetItemText(i, 2, _T("time"));
+		mList.SetItemText(i, 3, _T("srcIP"));
+		mList.SetItemText(i, 4, _T("destIP"));
+		mList.SetItemText(i, 5, _T(protocolParser(protocol)));
+		mList.SetItemText(i, 6, _T("packetLen"));
+		mList.SetItemText(i, 7, _T("packetInfo"));
+
+	}
 }
 
+char* protocolParser(int protocol) {
+	switch (protocol) //Check the Protocol and do accordingly...
+	{
+	case 1: //ICMP Protocol
+		return "ICMP";
+	case 2: //IGMP Protocol
+		return "IGMP"
+	case 6: //TCP Protocol
+		return "TCP"
+	case 17: //UDP Protocol
+		return "UDP"
+	default: //Some Other Protocol like ARP etc.
+		return "UNKNOWN"
+	}
+}
+
+
+void CSubFormViewDlg::OnLvnInsertitemListPacket(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	*pResult = 0;
+	
+}

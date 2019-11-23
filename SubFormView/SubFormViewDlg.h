@@ -49,4 +49,5 @@ public:
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	afx_msg void OnBnClickedButtonStart();
 	afx_msg void OnBnClickedButtonStop();
+	afx_msg void OnLvnInsertitemListPacket(NMHDR *pNMHDR, LRESULT *pResult);
 };

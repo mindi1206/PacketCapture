@@ -1,0 +1,153 @@
+
+
+***********************TCP Packet*************************
+
+IP Header
+ |-IP Version : 4
+ |-IP Header Length : 5 DWORDS or 20 Bytes
+ |-Type Of Service : 0
+ |-IP Total Length : 154 Bytes(Size of Packet)
+ |-Identification : 32433
+ |-Reserved ZERO Field : 0
+ |-Dont Fragment Field : 1
+ |-More Fragment Field : 0
+ |-TTL : 128
+ |-Protocol : 6
+ |-Checksum : 52891
+ |-Source IP : 192.168.0.2
+ |-Destination IP : 104.18.132.84
+
+TCP Header
+ |-Source Port : 59193
+ |-Destination Port : 443
+ |-Sequence Number : 422185144
+ |-Acknowledge Number : 4181129320
+ |-Header Length : 5 DWORDS or 20 BYTES
+ |-CWR Flag : 0
+ |-ECN Flag : 0
+ |-Urgent Flag : 0
+ |-Acknowledgement Flag : 1
+ |-Push Flag : 1
+ |-Reset Flag : 0
+ |-Synchronise Flag : 0
+ |-Finish Flag : 0
+ |-Window : 510
+ |-Checksum : 46566
+ |-Urgent Pointer : 0
+
+ DATA Dump 
+IP Header
+ 45 00 00 9a 7e b1 40 00 80 06 ce 9b c0 a8 00 02          E...~.@......... 
+ 68 12 84 54                                              h..T 
+
+TCP Header
+ e7 39 01 bb 19 2a 08 b8 f9 36 f8 68 50 18 01 fe          .9...*...6.hP... 
+ b5 e6 00 00                                              .... 
+
+Data Payload
+ 17 03 03 00 6d 6f 7b 37 63 f1 d0 72 6b 7f 03 4b          ....mo{7c..rk.K 
+ 9e 8d 1a 5e 5f 1c a1 f9 5d cd 46 de a9 74 6d 87          ...^_...].F..tm. 
+ 1d 6c f7 5b 2c 81 78 4c 78 a2 a7 81 6a 57 86 b9          .l.[,.xLx...jW.. 
+ 0e 8a 1f d1 49 3a ba 1e 47 be 69 06 e1 60 1e 3d          ....I:..G.i..`.= 
+ 41 fe 59 78 0b 9c 6a 33 b6 ce 9e b8 c2 53 2d 75          A.Yx..j3.....S-u 
+ 34 80 64 d9 30 7a a8 c2 cb f1 c9 19 61 e9 92 03          4.d.0z......a... 
+ 68 a4 9b b8 2c 92 11 8a 9a 6b 84 18 63 90 59 50          h...,....k..c.YP 
+ 15 87                                                    .. 
+
+
+###########################################################
+
+***********************TCP Packet*************************
+
+IP Header
+ |-IP Version : 4
+ |-IP Header Length : 5 DWORDS or 20 Bytes
+ |-Type Of Service : 0
+ |-IP Total Length : 40 Bytes(Size of Packet)
+ |-Identification : 32434
+ |-Reserved ZERO Field : 0
+ |-Dont Fragment Field : 1
+ |-More Fragment Field : 0
+ |-TTL : 128
+ |-Protocol : 6
+ |-Checksum : 53004
+ |-Source IP : 192.168.0.2
+ |-Destination IP : 104.18.132.84
+
+TCP Header
+ |-Source Port : 59193
+ |-Destination Port : 443
+ |-Sequence Number : 422185258
+ |-Acknowledge Number : 4181129806
+ |-Header Length : 5 DWORDS or 20 BYTES
+ |-CWR Flag : 0
+ |-ECN Flag : 0
+ |-Urgent Flag : 0
+ |-Acknowledgement Flag : 1
+ |-Push Flag : 0
+ |-Reset Flag : 0
+ |-Synchronise Flag : 0
+ |-Finish Flag : 0
+ |-Window : 514
+ |-Checksum : 499
+ |-Urgent Pointer : 0
+
+ DATA Dump 
+IP Header
+ 45 00 00 28 7e b2 40 00 80 06 cf 0c c0 a8 00 02          E..(~.@......... 
+ 68 12 84 54                                              h..T 
+
+TCP Header
+ e7 39 01 bb 19 2a 09 2a f9 36 fa 4e 50 10 02 02          .9...*.*.6.NP... 
+ 01 f3 00 00                                              .... 
+
+Data Payload
+
+
+###########################################################
+
+***********************TCP Packet*************************
+
+IP Header
+ |-IP Version : 4
+ |-IP Header Length : 5 DWORDS or 20 Bytes
+ |-Type Of Service : 0
+ |-IP Total Length : 83 Bytes(Size of Packet)
+ |-Identification : 15014
+ |-Reserved ZERO Field : 0
+ |-Dont Fragment Field : 1
+ |-More Fragment Field : 0
+ |-TTL : 128
+ |-Protocol : 6
+ |-Checksum : 6498
+ |-Source IP : 192.168.0.2
+ |-Destination IP : 40.90.189.152
+
+TCP Header
+ |-Source Port : 58453
+ |-Destination Port : 443
+ |-Sequence Number : 2645804327
+ |-Acknowledge Number : 3437398807
+ |-Header Length : 5 DWORDS or 20 BYTES
+ |-CWR Flag : 0
+ |-ECN Flag : 0
+ |-Urgent Flag : 0
+ |-Acknowledgement Flag : 1
+ |-Push Flag : 1
+ |-Reset Flag : 0
+ |-Synchronise Flag : 0
+ |-Finish Flag : 0
+ |-Window : 513
+ |-Checksum : 31836
+ |-Urgent Pointer : 0
+
+ DATA Dump 
+IP Header
+ 45 00 00 53 3a a6 40 00 80 06 19 62 c0 a8 00 02          E..S:.@....b.... 
+ 28 5a bd 98                                              (Z.. 
+
+TCP Header
+ e4 55 01 bb 9d b3 c5 27 cc e2 8b 17 50 18 02 01          .U.....'....P... 
+ 7c 5c 00 00                                              |\.. 
+
+Data

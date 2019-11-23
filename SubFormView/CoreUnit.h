@@ -26,13 +26,17 @@ class CoreUnit
 	static ICMP_HDR* icmpheader;
 	static CoreUnit* instance;
 	static SOCKET sniffer;//RAW SOCKET용 변수
+	
 public:
+	static void setThreadHandle(HANDLE handle);
+	static HANDLE captureThread;
+
 	static CoreUnit* getInstance();
-		
 	static int initializer();
-	void startCapture();
+	int startCapture();
 	static void CoreUnit::stopCapture();
 	static void terminateProgram();
+
 
 	void StartSniffing(SOCKET sniffer)
 	{
@@ -57,7 +61,8 @@ public:
 			}
 			else
 			{//잘못 읽은경우 에러메세지 출력
-				printf("recvfrom() failed.\n");
+				printf("capture terminated!.\n");
+				fclose(logfile);
 			}
 		} while (recvState > 0);//에러발생한 경우 해당 do-while 조건을 만족시키지 못해서 break;
 

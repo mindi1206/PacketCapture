@@ -24,23 +24,16 @@ TCP_HDR* CoreUnit::tcpheader;
 UDP_HDR* CoreUnit::udpheader;
 ICMP_HDR* CoreUnit::icmpheader;
 SOCKET CoreUnit::sniffer;//RAW SOCKET용 변수
+HANDLE CoreUnit::captureThread;
+
+void CoreUnit::setThreadHandle(HANDLE handle) {
+	CoreUnit::captureThread = handle;
+}
 
 int CoreUnit::initializer()
 {
-	struct in_addr addr;
-	int in;
-
-	char hostname[100];
-	struct hostent* local;
+	
 	WSADATA wsa;
-
-	//로깅용 파일 오픈
-	fopen_s(&logfile, "log.txt", "w");
-	if (logfile == NULL)
-	{
-		printf("Unable to create file.");
-	}
-
 	//윈속 초기화
 	//Initialise Winsock
 	printf("\nInitialising Winsock...");
@@ -49,7 +42,25 @@ int CoreUnit::initializer()
 		printf("WSAStartup() failed.\n");
 		return 1;
 	}
-	printf("Initialised");
+	printf("Winsock Initialised");
+
+	return 0;
+}
+
+int CoreUnit::startCapture()
+{
+	struct in_addr addr;
+	int in;
+
+	char hostname[100];
+	struct hostent* local;
+
+	//로깅용 파일 오픈
+	fopen_s(&logfile, "log.txt", "w");
+	if (logfile == NULL)
+	{
+		printf("Unable to create file.");
+	}
 
 	//Create a RAW Socket
 	printf("\nCreating RAW Socket...");
@@ -130,12 +141,8 @@ int CoreUnit::initializer()
 	printf("Packet Capture Statistics...\n");
 	/*계속해서 네트워크 인터페이스를 통과하는
 	모든 IPv4, IPv6패킷을 수신하고 로깅하고, 터미널에 카운팅하는 함수 시작*/
-	return 0;
-}
-
-void CoreUnit::startCapture()
-{
 	StartSniffing(sniffer);
+	return 0;
 }
 void CoreUnit::stopCapture()
 {

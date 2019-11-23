@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include <iostream>
 #include "CoreUnit.h"
+#include <process.h>
 
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
@@ -295,14 +296,24 @@ HBRUSH CSubFormViewDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	return hbr;
 }
 
+unsigned WINAPI startCaptureThread(void* arg) {
+	std::cout << "startCapture!\n";
 
+	CoreUnit* core_unit = CoreUnit::getInstance();
+	core_unit->startCapture();
+
+	return 0;
+}
 
 void CSubFormViewDlg::OnBnClickedButtonStart()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	std::cout << "startCapture!\n";
-	CoreUnit* core_unit = CoreUnit::getInstance();
-	core_unit->startCapture();
+
+	CoreUnit::setThreadHandle((HANDLE)_beginthreadex(NULL, 0, startCaptureThread, NULL, 0, NULL));
+	if (CoreUnit::captureThread == NULL) {
+		std::cout << "capture thread init failed!\n";
+		return;
+	}
 }
 
 
@@ -313,3 +324,4 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 	CoreUnit* core_unit = CoreUnit::getInstance();
 	core_unit->stopCapture();
 }
+

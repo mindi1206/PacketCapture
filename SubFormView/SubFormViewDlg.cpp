@@ -9,6 +9,7 @@
 #include <iostream>
 #include "CoreUnit.h"
 #include <process.h>
+#include <tchar.h>
 
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
@@ -352,52 +353,63 @@ void CSubFormViewDlg::OnBnClickedButtonStart()
 	}
 }
 int idx = 0;
-
+char* protocolParser(int protocol) {
+	switch (protocol) //Check the Protocol and do accordingly...
+	{
+	case 1: //ICMP Protocol
+		std::cout << "ICMP\n";
+		return "ICMP";
+	case 2: //IGMP Protocol
+		std::cout << "IGMP\n";
+		return "IGMP";
+	case 6: //TCP Protocol
+		std::cout << "tcp\n";
+		return "TCP";
+	case 17: //UDP Protocol
+		std::cout << "UDP\n";
+		return "UDP";
+	default: //Some Other Protocol like ARP etc.
+		return "UNKNOWN";
+	}
+}
 void CSubFormViewDlg::OnBnClickedButtonStop()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	std::cout << "endCapture\n";
 	CoreUnit* core_unit = CoreUnit::getInstance();
 	core_unit->stopCapture();
-	
+
+	int nItemNum = mList.GetItemCount();
 
 	std::vector<char*>::iterator iter;
 	std::vector<char*> v = CoreUnit::packetVector;
-	CString temp;
+	CString strProtocol;
 	int i = 1;
+	
+
 	for (iter = v.begin(); iter != v.end(); ++iter,i++) {
 		char* packet = *iter;
 		IPV4_HDR* iphdr = (IPV4_HDR*)packet;
 		int protocol = iphdr->ip_protocol;
 
-		temp.Format(_T("%d"), i);
-		mList.InsertItem(i, temp);
-		//mList.SetItemText(i, 1, _T("idx"));
-		mList.SetItemText(i, 2, _T("time"));
-		mList.SetItemText(i, 3, _T("srcIP"));
-		mList.SetItemText(i, 4, _T("destIP"));
-		mList.SetItemText(i, 5, _T(protocolParser(protocol)));
-		mList.SetItemText(i, 6, _T("packetLen"));
-		mList.SetItemText(i, 7, _T("packetInfo"));
+		strProtocol = protocolParser(protocol);
 
+		if(strProtocol.Compare(_T("UNKNOWN")) != 0 )
+		{
+			CString idxStr;
+			idxStr.Format(_T("%d"), i);
+			mList.InsertItem(nItemNum, idxStr);
+			mList.SetItemText(nItemNum, 1, _T("time"));
+			mList.SetItemText(nItemNum, 2, _T("srcIP"));
+			mList.SetItemText(nItemNum, 3, _T("destIP"));
+			mList.SetItemText(nItemNum, 4, strProtocol);
+			mList.SetItemText(nItemNum, 5, _T("packetLen"));
+			mList.SetItemText(nItemNum, 6, _T("packetInfo"));
+		}
 	}
 }
 
-char* protocolParser(int protocol) {
-	switch (protocol) //Check the Protocol and do accordingly...
-	{
-	case 1: //ICMP Protocol
-		return "ICMP";
-	case 2: //IGMP Protocol
-		return "IGMP"
-	case 6: //TCP Protocol
-		return "TCP"
-	case 17: //UDP Protocol
-		return "UDP"
-	default: //Some Other Protocol like ARP etc.
-		return "UNKNOWN"
-	}
-}
+
 
 
 void CSubFormViewDlg::OnLvnInsertitemListPacket(NMHDR *pNMHDR, LRESULT *pResult)

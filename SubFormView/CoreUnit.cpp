@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CoreUnit.h"
+#include <iostream>
 
 CoreUnit* CoreUnit::instance;
 CoreUnit* CoreUnit::getInstance()
@@ -48,25 +49,23 @@ int CoreUnit::initializer()
 	}
 	printf("Winsock Initialised");
 
-	CoreUnit::newItemEventHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
-
 	return 0;
 }
 
-int CoreUnit::startCapture()
+int CoreUnit::startCapture(struct hostent* local, int decision)
 {
+	tcp = 0;
+	udp = 0;
+	icmp = 0;
+	others = 0;
+	igmp = 0;
+	total = 0;
+	i = 0;
+	j = 0;
 	struct in_addr addr;
-	int in;
+	int in = decision;
 
 	char hostname[100];
-	struct hostent* local;
-
-	//로깅용 파일 오픈
-	fopen_s(&logfile, "log.txt", "w");
-	if (logfile == NULL)
-	{
-		printf("Unable to create file.");
-	}
 
 	//Create a RAW Socket
 	printf("\nCreating RAW Socket...");
@@ -80,42 +79,20 @@ int CoreUnit::startCapture()
 	}
 	printf("Created.");
 
-	//Retrive the local hostname
-	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
-	{
-		printf("Error : %d", WSAGetLastError());
-		return 1;
-	}
-	printf("\nHost name : %s \n", hostname);//현재 컴퓨터의 이름
+	std::cout << "decision : " << decision << std::endl;
 
-	//Retrive the available IPs of the local host
-	local = gethostbyname(hostname);
-	printf("\nAvailable Network Interfaces : \n");
-	if (local == NULL)
-	{
-		printf("Error : %d.\n", WSAGetLastError());
-		return 1;
-	}
-
-	for (i = 0; local->h_addr_list[i] != 0; ++i)
-	{//감지 가능한 인터페이스 목록을 출력
-		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-		printf("Interface Number : %d Address : %s\n", i, inet_ntoa(addr));
-	}
-
-	printf("Enter the interface number you would like to sniff : ");
-	scanf_s("%d", &in);//감지할 인터페이스를 사용자로부터 입력받음
 
 	//감시할 ip주소 초기화하고, 입력한 정보로 바꿈
 	memset(&dest, 0, sizeof(dest));
 	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[in], sizeof(dest.sin_addr.s_addr));
 	dest.sin_family = AF_INET;
 	dest.sin_port = 0;
-
+	std::cout << "Bind Start" << std::endl;
 	//바인드 수행
 	printf("\nBinding socket to local system and port 0 ...");
 	if (bind(sniffer, (struct sockaddr*) & dest, sizeof(dest)) == SOCKET_ERROR)
 	{
+		memcpy(&addr, local->h_addr_list[in], sizeof(struct in_addr));
 		printf("bind(%s) failed.\n", inet_ntoa(addr));
 		return 1;
 	}
@@ -156,6 +133,17 @@ void CoreUnit::stopCapture()
 }
 void CoreUnit::terminateProgram()
 {
-	CloseHandle(CoreUnit::newItemEventHandle);
 	WSACleanup();
+}
+void CoreUnit::clearPackerVector() {
+	std::vector<char*>::iterator iter;
+	std::vector<char*> v = CoreUnit::packetVector;
+	int i = 1;
+
+	for (iter = v.begin(); iter != v.end(); ++iter, i++) {
+		char* packet = *iter;
+		free(packet);
+	}//for loop end here
+
+	CoreUnit::packetVector.clear();
 }

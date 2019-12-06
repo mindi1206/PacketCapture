@@ -2,19 +2,19 @@
 
 
 
-// CFormView3 폼 뷰입니다.
+// CFormViewMain 폼 뷰입니다.
 
-class CFormView3 : public CFormView
+class CFormViewMain : public CFormView
 {
-	DECLARE_DYNCREATE(CFormView3)
+	DECLARE_DYNCREATE(CFormViewMain)
 
 protected:
-	CFormView3();           // 동적 만들기에 사용되는 protected 생성자입니다.
-	virtual ~CFormView3();
+	CFormViewMain();           // 동적 만들기에 사용되는 protected 생성자입니다.
+	virtual ~CFormViewMain();
 
 public:
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_FORMVIEW3 };
+	enum { IDD = IDD_FORMMAIN };
 #endif
 #ifdef _DEBUG
 	virtual void AssertValid() const;

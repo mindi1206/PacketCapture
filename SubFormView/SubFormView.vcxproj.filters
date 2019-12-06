@@ -48,6 +48,12 @@
     <ClInclude Include="HeaderType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FormViewMain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CNicSelector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SubFormView.cpp">
@@ -69,6 +75,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CoreUnit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FormViewMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CNicSelector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

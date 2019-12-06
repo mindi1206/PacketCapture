@@ -31,6 +31,7 @@ class CoreUnit
 	static SOCKET sniffer;//RAW SOCKET용 변수
 	
 public:
+	static void clearPackerVector();
 	static void setThreadHandle(HANDLE handle);
 	static HANDLE captureThread;
 	static std::vector<char*> packetVector;
@@ -39,7 +40,7 @@ public:
 
 	static CoreUnit* getInstance();
 	static int initializer();
-	int startCapture();
+	int startCapture(struct hostent* local, int decision);
 	static void CoreUnit::stopCapture();
 	static void terminateProgram();
 
@@ -65,18 +66,14 @@ public:
 
 			if (recvState > 0)
 			{//읽었다면
-				CoreUnit::packetVector.push_back(Buffer);
-				SetEvent(CoreUnit::newItemEventHandle);
-				ProcessPacket(CoreUnit::packetVector.back(), recvState);//로깅 및 카운팅 처리
+				ProcessPacket(Buffer, recvState);//로깅 및 카운팅 처리
 			}
 			else
 			{//잘못 읽은경우 에러메세지 출력
 				printf("capture terminated!.\n");
-				fclose(logfile);
+				break;
 			}
 		} while (recvState > 0);//에러발생한 경우 해당 do-while 조건을 만족시키지 못해서 break;
-
-		free(Buffer);//패킷 저장할 버퍼의 동적할당을 free시킨다.
 	}
 
 	//버퍼에 저장된 패킷이 어떤 프로토콜을 쓰는지에 따라 각각의 처리함수로 분기한다.
@@ -90,7 +87,8 @@ public:
 		{
 		case 1: //ICMP Protocol
 			++icmp;
-			PrintIcmpPacket(Buffer, Size);
+			CoreUnit::packetVector.push_back(Buffer);
+			//PrintIcmpPacket(Buffer, Size);
 			break;
 
 		case 2: //IGMP Protocol
@@ -99,12 +97,12 @@ public:
 
 		case 6: //TCP Protocol
 			++tcp;
-			PrintTcpPacket(Buffer, Size);
+			CoreUnit::packetVector.push_back(Buffer);
 			break;
 
 		case 17: //UDP Protocol
 			++udp;
-			PrintUdpPacket(Buffer, Size);
+			CoreUnit::packetVector.push_back(Buffer);
 			break;
 
 		default: //Some Other Protocol like ARP etc.

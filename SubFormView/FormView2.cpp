@@ -52,25 +52,10 @@ void CFormView2::Dump(CDumpContext& dc) const
 
 HBRUSH CFormView2::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-	HBRUSH hbr = CFormView::OnCtlColor(pDC, pWnd, nCtlColor);
+	//HBRUSH hbr = CFormView::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	// TODO:  여기서 DC의 특성을 변경합니다.
-	switch (nCtlColor) {
-
-	case CTLCOLOR_DLG:   // 다이얼로그 배경색을 white로.
-	{
-		return (HBRUSH)GetStockObject(WHITE_BRUSH);
-		break;
-	}
-	case CTLCOLOR_BTN:    // 버튼의 배경색을 투명으로...
-	{
-		pDC->SetBkMode(TRANSPARENT);
-		return (HBRUSH)::GetStockObject(WHITE_BRUSH);
-	}
-
-
-
-	}
+	HBRUSH hbr = CreateSolidBrush(RGB(255, 255, 255));
 
 	// TODO:  기본값이 적당하지 않으면 다른 브러시를 반환합니다.
 	return hbr;

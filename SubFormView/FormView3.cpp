@@ -26,6 +26,7 @@ void CFormView3::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CFormView3, CFormView)
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 
@@ -47,3 +48,15 @@ void CFormView3::Dump(CDumpContext& dc) const
 
 
 // CFormView3 메시지 처리기입니다.
+
+
+HBRUSH CFormView3::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	//HBRUSH hbr = CFormView::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	// TODO:  여기서 DC의 특성을 변경합니다.
+	HBRUSH hbr = CreateSolidBrush(RGB(255, 255, 255));
+
+	// TODO:  기본값이 적당하지 않으면 다른 브러시를 반환합니다.
+	return hbr;
+}

@@ -67,3 +67,9 @@
 		USHORT id;
 		USHORT seq;
 	} ICMP_HDR;
+	typedef struct ethernet_header
+	{
+		UCHAR dest[6];
+		UCHAR source[6];
+		USHORT type;
+	}   ETHER_HDR, *PETHER_HDR, FAR* LPETHER_HDR, ETHERHeader;

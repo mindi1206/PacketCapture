@@ -52,6 +52,8 @@ void CFormView1::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_Reserved_ZERO, ReservedZero);
 	DDX_Control(pDX, IDC_EDIT_DONT_FRAG, DontFrag);
 	DDX_Control(pDX, IDC_EDIT_MORE_FRAG, MoreFrag);
+	
+	DDX_Control(pDX, IDC_TCP_MSG, MessagePayload);
 }
 
 BEGIN_MESSAGE_MAP(CFormView1, CFormView)

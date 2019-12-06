@@ -61,6 +61,10 @@ public:
 //	afx_msg void OnEnChangeEditDontFrag();
 	CEdit DontFrag;
 	CEdit MoreFrag;
+	CEdit DestMac;
+	CEdit SrcMack;
+	CEdit Type;
+	CEdit MessagePayload;
 };
 
 

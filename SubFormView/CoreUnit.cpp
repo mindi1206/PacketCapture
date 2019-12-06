@@ -15,6 +15,7 @@ CoreUnit* CoreUnit::getInstance()
 FILE* CoreUnit::logfile;
 int CoreUnit::tcp = 0,
 			CoreUnit::udp = 0, CoreUnit::icmp = 0, CoreUnit::others = 0, CoreUnit::igmp = 0,
+			CoreUnit::dns = 0,
 			CoreUnit::total = 0, CoreUnit::i, CoreUnit::j;//각각의 프로토콜에 대한 카운터 초기화
 struct sockaddr_in CoreUnit::source, CoreUnit::dest;//감시대상
 char CoreUnit::hex[2];
@@ -59,6 +60,7 @@ int CoreUnit::startCapture(struct hostent* local, int decision)
 	icmp = 0;
 	others = 0;
 	igmp = 0;
+	dns = 0;
 	total = 0;
 	i = 0;
 	j = 0;
@@ -146,4 +148,10 @@ void CoreUnit::clearPackerVector() {
 	}//for loop end here
 
 	CoreUnit::packetVector.clear();
+}
+
+CSubFormViewDlg* CoreUnit::mainFrame;
+
+void CoreUnit::setMainFrame(CSubFormViewDlg* mainFrame) {
+	CoreUnit::mainFrame = mainFrame;
 }

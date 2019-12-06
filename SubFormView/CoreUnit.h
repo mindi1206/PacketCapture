@@ -6,6 +6,9 @@
 #include <vector>
 #include <stdlib.h>
 #include <malloc.h>
+#include "resource.h"
+#include "SubFormViewDlg.h"
+
 
 #pragma comment(lib,"ws2_32.lib") //For winsock
 #define SIO_RCVALL _WSAIOW(IOC_VENDOR,1) //this removes the need of mstcpip.h
@@ -18,7 +21,7 @@ class CoreUnit
 
 	//로깅용 파일에 대한 파일포인터
 	static FILE* logfile;
-	static int tcp, udp, icmp, others, igmp, total, i, j;//각각의 프로토콜에 대한 카운터 초기화
+	static int tcp, udp, icmp, others, igmp, dns, total, i, j;//각각의 프로토콜에 대한 카운터 초기화
 	static struct sockaddr_in source, dest;//감시대상
 	static char hex[2];
 
@@ -31,6 +34,8 @@ class CoreUnit
 	static SOCKET sniffer;//RAW SOCKET용 변수
 	
 public:
+	static CSubFormViewDlg* mainFrame;
+	static void setMainFrame(CSubFormViewDlg* mainFrame);
 	static void clearPackerVector();
 	static void setThreadHandle(HANDLE handle);
 	static HANDLE captureThread;
@@ -80,7 +85,10 @@ public:
 	//직후, 패킷에 맞는 프로토콜 카운터를 증가시킨다
 	void ProcessPacket(char* Buffer, int Size)
 	{
+		unsigned short iphdrlen;
 		iphdr = (IPV4_HDR*)Buffer;
+		
+
 		++total;
 
 		switch (iphdr->ip_protocol) //Check the Protocol and do accordingly...
@@ -98,18 +106,45 @@ public:
 		case 6: //TCP Protocol
 			++tcp;
 			CoreUnit::packetVector.push_back(Buffer);
+			//== DNS Checker
+			iphdrlen = iphdr->ip_header_len * 4;
+			tcpheader = (TCP_HDR*)(Buffer + iphdrlen);
+			if ( ntohs( tcpheader->source_port ) == 53 || ntohs(tcpheader->dest_port) == 53 ) {
+				++dns;
+			}
+			//==
 			break;
 
 		case 17: //UDP Protocol
 			++udp;
 			CoreUnit::packetVector.push_back(Buffer);
+			//== DNS Checker
+			iphdrlen = iphdr->ip_header_len * 4;
+			udpheader = (UDP_HDR*)(Buffer + iphdrlen);
+			if (ntohs(udpheader->source_port) == 53 || ntohs(udpheader->dest_port) == 53) {
+				++dns;
+			}
+			//==
 			break;
 
 		default: //Some Other Protocol like ARP etc.
 			++others;
 			break;
 		}
-		printf("TCP : %d UDP : %d ICMP : %d IGMP : %d Others : %d Total : %d\r", tcp, udp, icmp, igmp, others, total);
+		printf("TCP : %d UDP : %d ICMP : %d IGMP : %d Others : %d Total : %d\r", 
+							tcp, udp, icmp, igmp, others, total);
+		CString str;
+		str.Format(_T("%d"), tcp);
+		mainFrame->TcpCounter.SetWindowTextW(str);
+
+		str.Format(_T("%d"), udp);
+		mainFrame->UdpCounter.SetWindowTextW(str);
+
+		str.Format(_T("%d"), dns);
+		mainFrame->DnsCounter.SetWindowTextW(str);
+
+		str.Format(_T("%d"), icmp);
+		mainFrame->IcmpCounter.SetWindowTextW(str);
 	}
 
 	//IP헤더 출력

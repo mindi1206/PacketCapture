@@ -12,6 +12,7 @@
 #include <tchar.h>
 #include "CNicSelector.h"
 #include <malloc.h>
+#include <algorithm>
 
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
@@ -88,6 +89,10 @@ void CSubFormViewDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_PACKET, mList);
 	DDX_Control(pDX, IDC_EDIT_IP, m_EditIP);
 	DDX_Control(pDX, IDC_EDIT_PORT, m_EditPORT);
+	DDX_Control(pDX, IDC_EDIT__COUNTER_TCP, TcpCounter);
+	DDX_Control(pDX, IDC_EDIT__COUNTER_UDP, UdpCounter);
+	DDX_Control(pDX, IDC_EDIT__COUNTER_ICMP, IcmpCounter);
+	DDX_Control(pDX, IDC_EDIT__COUNTER_DNS, DnsCounter);
 }
 
 BEGIN_MESSAGE_MAP(CSubFormViewDlg, CDialogEx)
@@ -142,6 +147,7 @@ BOOL CSubFormViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+
 
 	CRect rc;
 	GetClientRect(&rc);
@@ -231,6 +237,12 @@ BOOL CSubFormViewDlg::OnInitDialog()
 	CoreUnit* core_unit = CoreUnit::getInstance();
 
 	core_unit->initializer();
+
+	TcpCounter.SetWindowTextW(_T(""));
+	UdpCounter.SetWindowTextW(_T(""));
+	IcmpCounter.SetWindowTextW(_T(""));
+
+	core_unit->setMainFrame(this);
 
 	CButton* stop = (CButton*)GetDlgItem(IDC_BUTTON_STOP);
 	stop->EnableWindow(FALSE);
@@ -549,6 +561,10 @@ void CSubFormViewDlg::OnBnClickedButtonStart()
 	stop->EnableWindow(TRUE);
 	CNicSelector nicSelectorModal;
 
+	TcpCounter.SetWindowTextW(_T(""));
+	UdpCounter.SetWindowTextW(_T(""));
+	IcmpCounter.SetWindowTextW(_T(""));
+
 	//==
 	struct hostent* local;
 	char hostname[100];
@@ -605,7 +621,7 @@ char* protocolParser(int protocol) {
 		std::cout << "IGMP\n";
 		return "IGMP";
 	case 6: //TCP Protocol
-		std::cout << "tcp\n";
+		std::cout << "TCP\n";
 		return "TCP";
 	case 17: //UDP Protocol
 		std::cout << "UDP\n";
@@ -624,12 +640,79 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 	int nItemNum = mList.GetItemCount();
 
 	std::vector<char*>::iterator iter;
+	std::vector<char*>::iterator subIter;
 	std::vector<char*> v = CoreUnit::packetVector;
 	CString strProtocol;
 	int i = 1;
 	struct sockaddr_in sourceAddr;
 	struct sockaddr_in destAddr;
 	char buffer[65536];
+
+	for (iter = v.begin(); iter != v.end(); ++iter, i++) {
+		char* packet = *iter;
+		IPV4_HDR* iphdr = (IPV4_HDR*)packet;
+		
+		int protocol = iphdr->ip_protocol;
+		short length = ntohs(iphdr->ip_total_length);
+		strProtocol = protocolParser(protocol);
+
+		if (strProtocol.Compare(_T("TCP")) == 0)
+		{
+			CString idxStr;
+
+			//==================
+			unsigned short iphdrlen = iphdr->ip_header_len * 4;
+
+			TCP_HDR* tcpheader = (TCP_HDR*)(packet + iphdrlen);
+			//==================
+			memset(&sourceAddr, 0, sizeof(sourceAddr));
+			sourceAddr.sin_addr.s_addr = iphdr->ip_srcaddr;
+			const char* chPtrsrcIp = inet_ntoa(sourceAddr.sin_addr);
+			CString srcIp = (CString)chPtrsrcIp;
+
+			memset(&destAddr, 0, sizeof(destAddr));
+			destAddr.sin_addr.s_addr = iphdr->ip_destaddr;
+			const char* chPtrdestIp = inet_ntoa(destAddr.sin_addr);
+			CString destIp = (CString)chPtrdestIp;
+
+			if (tcpheader->syn == 1 && tcpheader->ack == 1) {
+				int j = 1;
+				for (subIter = v.begin(); subIter != iter; ++subIter, j++) {
+					//처음부터, iter(현재 아우터 루프에서 가리키는 곳까지 순회)
+					char* subPacket = *subIter;
+					IPV4_HDR* subIphdr = (IPV4_HDR*)subPacket;
+
+					int subProtocol = subIphdr->ip_protocol;
+					short subLength = ntohs(subIphdr->ip_total_length);
+					CString subStrProtocol = (CString)protocolParser(subProtocol);
+
+					if (strProtocol.Compare(_T("TCP")) == 0) {
+						//만약 TCP라면... ACK를 찾아 나선다
+						unsigned short subIphdrlen = subIphdr->ip_header_len * 4;
+						TCP_HDR* subTcpheader = (TCP_HDR*)(subPacket + subIphdrlen);
+						if (subTcpheader->ack == 1 && subTcpheader->syn == 0 && subTcpheader->psh == 0) {
+							//플래그 조건이 맞다면, src와 dest가 반대인지 검사한다.
+							if (iphdr->ip_srcaddr == subIphdr->ip_destaddr && tcpheader->source_port == subTcpheader->dest_port) {
+								//검사대상(iter)패킷의 소스가 찾은 패킷(subIter)의 데스티네이션이면서,
+								if (iphdr->ip_destaddr == subIphdr->ip_srcaddr && tcpheader->dest_port == subTcpheader->source_port) {
+									//목적지가 검사대상의 소스라면, 둘을 스왑한다.
+
+
+									printf("Do a Swap Operation!\n");
+									//iter_swap(v.begin() + (i - 1), v.begin() + (j - 1));
+									char* temp = v[j - 1];
+									CoreUnit::packetVector[j - 1] = CoreUnit::packetVector[i - 1];
+									CoreUnit::packetVector[i - 1] = temp;
+									break;
+								}
+							}
+						}
+					}
+				}//inner loop
+			}
+		}
+	}//outer Loop
+	i = 1;
 	for (iter = v.begin(); iter != v.end(); ++iter,i++) {
 		char* packet = *iter;
 		IPV4_HDR* iphdr = (IPV4_HDR*)packet;
@@ -726,7 +809,11 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 	CString str;
 
 	CString destport;
+	struct sockaddr_in tempAddr;
+
+	const char* tempIp;
 	
+
 	//WORD srcport;
 	switch (index) {
 		//MAIN
@@ -782,7 +869,7 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 		str.Format(_T("%d"), iphdr->ip_tos);
 		m_pFormView1->TOS.SetWindowTextW(str);
 		
-		str.Format(_T("%d"), iphdr->ip_total_length);
+		str.Format(_T("%d"), ntohs(iphdr->ip_total_length));
 		m_pFormView1->TotalLength.SetWindowTextW(str);
 
 		str.Format(_T("%d"), iphdr->ip_id);
@@ -801,18 +888,30 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 		m_pFormView1->FragOffset.SetWindowTextW(str);
 
 		str.Format(_T("%d"), iphdr->ip_ttl);
+		m_pFormView1->TTL.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_protocol);
 		m_pFormView1->Protocol.SetWindowTextW(str);
 
 		str.Format(_T("%d"), iphdr->ip_checksum);
 		m_pFormView1->HeaderChecksum.SetWindowTextW(str);
-
-		str.Format(_T("%d"), iphdr->ip_srcaddr);
+		
+		memset(&tempAddr, 0, sizeof(tempAddr));
+		tempAddr.sin_addr.s_addr = iphdr->ip_srcaddr;
+		tempIp = inet_ntoa(tempAddr.sin_addr);
+		str = (CString)tempIp;
 		m_pFormView1->SourceAddress.SetWindowTextW(str);
 
-		str.Format(_T("%d"), iphdr->ip_destaddr);
+		memset(&tempAddr, 0, sizeof(tempAddr));
+		tempAddr.sin_addr.s_addr = iphdr->ip_destaddr;
+		tempIp = inet_ntoa(tempAddr.sin_addr);
+		str = (CString)tempIp;
 		m_pFormView1->DestinationAddress.SetWindowTextW(str);
-		
 
+		//========HTTP PAYLOAD Analysis
+		httpPayloadPrinter(packet, iphdrlen, tcpheader, iphdr, m_pFormView1);
+	//switch
+		//==
 		break;
 		// DNS
 	case 2:
@@ -941,62 +1040,60 @@ void CSubFormViewDlg::OnBnClickedButtonReset()
 																	
 	OnCbnSelchangeCombo();
 
-	//int nItemNum = mList.GetItemCount();
 
-	//std::vector<char*>::iterator iter;
-	//std::vector<char*> v = CoreUnit::packetVector;
-
-	//CString strProtocol;
-
-	//int i = 1;
-	//struct sockaddr_in source, dest, sourceAddr, destAddr;
-	//char buffer[65536];
-	//for (iter = v.begin(); iter != v.end(); ++iter, i++) {
-	//	char* packet = *iter;
-	//	IPV4_HDR* iphdr = (IPV4_HDR*)packet;
-	//	//IPV4_HDR* myIphdr = (IPV4_HDR*)packet;
-	//	int protocol = iphdr->ip_protocol;
-	//	short length = ntohs(iphdr->ip_total_length);
-
-	//	strProtocol = protocolParser(protocol);
-
-	//	if (strProtocol.Compare(_T("UNKNOWN")) != 0)
-	//	{
-	//		CString idxStr;
-	//		idxStr.Format(_T("%d"), i);
-	//		mList.InsertItem(nItemNum, idxStr);
-	//		// 시
-	//		mList.SetItemText(nItemNum, 1, _T("time"));
-	//	
-	//		unsigned short iphdrlen = iphdr->ip_header_len * 4;
-
-	//		TCP_HDR* tcpheader = (TCP_HDR*)(packet + iphdrlen);
-	//		memset(&sourceAddr, 0, sizeof(sourceAddr));
-	//		sourceAddr.sin_addr.s_addr = iphdr->ip_srcaddr;
-	//		const char* chPtrsrcIp = inet_ntoa(sourceAddr.sin_addr);
-	//		CString srcIp = (CString)chPtrsrcIp;
-
-	//		mList.SetItemText(nItemNum, 2, srcIp);
-	//
-	//		memset(&destAddr, 0, sizeof(destAddr));
-	//		destAddr.sin_addr.s_addr = iphdr->ip_destaddr;
-	//		const char* chPtrdestIp = inet_ntoa(destAddr.sin_addr);
-	//		CString destIp = (CString)chPtrdestIp;
-	//		
-	//
-	//		mList.SetItemText(nItemNum, 3, destIp);
-
-	//		mList.SetItemText(nItemNum, 4, strProtocol);
-
-	//		memset(&buffer, 0, sizeof(buffer));
-	//		sprintf_s(buffer, sizeof(buffer), "%d", length);
-	//		CString total_length = (CString)buffer;
-	//		mList.SetItemText(nItemNum, 5, total_length);
-
-	//		mList.SetItemText(nItemNum, 6, _T("packetInfo"));
-	//	}
-	//}
 }
 void CSubFormViewDlg::setNicDecision(int decision) {
 	this->nicDecision = decision;
+}
+void CSubFormViewDlg::httpPayloadPrinter(char* packet, 
+											unsigned short iphdrlen, 
+											TCP_HDR* tcpheader, 
+											IPV4_HDR* iphdr, 
+											CFormView1* m_pFormView1) {
+	char a, line[17], c;
+	int j;
+	char* httpPayload = packet + iphdrlen + tcpheader->data_offset * 4;
+	//loop over each character and print
+
+	int Size = ntohs(iphdr->ip_total_length) - tcpheader->data_offset * 4 - iphdr->ip_header_len * 4;
+	CString printBuffer;
+
+	//페이로드 영역 초기화
+	m_pFormView1->MessagePayload.SetWindowTextW(_T(""));
+	printf("Size : %d\n",Size);
+	if (Size > 5) {
+		char tester[6] = {'\0'};
+		for (int i = 0; i < 5; i ++) {
+			tester[i] = httpPayload[i];
+		}
+		printf("tester : %s\n",tester);
+		if (strcmp(tester, "HTTP/") && strcmp(tester, "GET /") && strcmp(tester, "POST/")) {
+			m_pFormView1->MessagePayload.SetWindowTextW(_T("RESOURCE DATA PAYLOAD OF PREVIOUS HTTP PACKET"));
+			return;
+		}
+	}
+
+	
+
+	CString temp;
+	for (int i = 0; i < Size; i++)
+	{
+		
+		if (httpPayload[i] == '\r' && httpPayload[i+1] == '\n') {
+			if (httpPayload[i+2] == '\r' && httpPayload[i+3] == '\n') {
+				//End of HTTP Header
+				break;
+			}
+		}
+		c = httpPayload[i];
+		temp.Format(_T("%c"), c);
+		printBuffer += temp;
+	}
+	
+	//fprintf(logfile, "\n");
+	CString str = (CString)printBuffer;
+	if (str.GetLength() > 0) {
+		printBuffer += "\n\0";
+		m_pFormView1->MessagePayload.SetWindowTextW(str);
+	}
 }

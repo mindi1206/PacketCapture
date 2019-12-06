@@ -10,6 +10,7 @@
 #include "FormView3.h"
 #include "afxwin.h"
 #include "afxcmn.h"
+#include "HeaderType.h"
 #include <vector>
 
 using namespace std;
@@ -77,6 +78,8 @@ protected:
 public:
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedButton2();
+
+	void httpPayloadPrinter(char* packet, unsigned short iphdrlen, TCP_HDR* tcpheader, IPV4_HDR* iphdr, CFormView1* m_pFormView1);
 	
 
 	CComboBox mCombo;
@@ -96,4 +99,8 @@ public:
 	std::vector<ListData> listdata;
 	int nicDecision;
 	void setNicDecision(int decision);
+	CEdit TcpCounter;
+	CEdit UdpCounter;
+	CEdit IcmpCounter;
+	CEdit DnsCounter;
 };

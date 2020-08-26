@@ -29,6 +29,46 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+//	afx_msg void OnEnChangeFoffset();
+	CEdit IPVersion;
+	CEdit IHL;
+	CEdit TOS;
+	CEdit TotalLength;
+	CEdit Identification;
+	CEdit MoreFrag;
+	CEdit DontFrag;
+	CEdit ReservedZero;
+	CEdit FragOffset;
+	CEdit TTL;
+	CEdit Protocol;
+	CEdit HeaderChecksum;
+	CEdit SourceAddress;
+	CEdit DestinationAddress;
+	CEdit Type;
+	CEdit Code;
+	CEdit CheckSum;
+	CEdit id;
+	CEdit seq;
+
+	CEdit IPVersion2;
+	CEdit IHL2;
+	CEdit TOS2;
+	CEdit TotalLength2;
+	CEdit Identification2;
+	CEdit MoreFrag2;
+	CEdit DontFrag2;
+	CEdit ReservedZero2;
+	CEdit FragOffset2;
+	CEdit TTL2;
+	CEdit Protocol2;
+	CEdit HeaderChecksum2;
+	CEdit SourceAddress2;
+	CEdit DestinationAddress2;
+	CEdit Type2;
+	CEdit Code2;
+	CEdit CheckSum2;
+	CEdit id2;
+	CEdit seq2;
 };
 
 

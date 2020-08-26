@@ -20,14 +20,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
@@ -79,7 +79,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions);CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -105,10 +105,12 @@
   <ItemGroup>
     <ClInclude Include="CNicSelector.h" />
     <ClInclude Include="CoreUnit.h" />
+    <ClInclude Include="DNSParser.h" />
     <ClInclude Include="FormView1.h" />
     <ClInclude Include="FormView2.h" />
     <ClInclude Include="FormView3.h" />
     <ClInclude Include="FormViewMain.h" />
+    <ClInclude Include="InfoGen.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SubFormView.h" />
@@ -119,10 +121,12 @@
   <ItemGroup>
     <ClCompile Include="CNicSelector.cpp" />
     <ClCompile Include="CoreUnit.cpp" />
+    <ClCompile Include="DNSParser.cpp" />
     <ClCompile Include="FormView1.cpp" />
     <ClCompile Include="FormView2.cpp" />
     <ClCompile Include="FormView3.cpp" />
     <ClCompile Include="FormViewMain.cpp" />
+    <ClCompile Include="InfoGen.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

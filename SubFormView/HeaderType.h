@@ -67,9 +67,54 @@
 		USHORT id;
 		USHORT seq;
 	} ICMP_HDR;
+
+	typedef struct payload_dns
+	{
+		// DNS Çì´õ
+		unsigned short transaction_id; // identification number
+
+		unsigned char recur_desired : 1; // recursion desired
+		unsigned char truncated_message : 1; // truncated message
+		unsigned char authoritive_answer : 1; // authoritive answer
+		unsigned char opcode : 4; // purpose of message
+		unsigned char qry_res_flag : 1; // query/response flag
+
+		unsigned char response_code : 4; // response code
+		unsigned char checking_disabled : 1; // checking disabled
+		unsigned char authenticated_data : 1; // authenticated data
+		unsigned char z : 1; // its z! reserved
+		unsigned char recursion_available : 1; // recursion available
+
+		unsigned short q_count; // number of question entries
+		unsigned short ans_count; // number of answer entries
+		unsigned short auth_count; // number of authority entries
+		unsigned short add_count; // number of resource entries
+	} DNS_HDR;
+
+	typedef struct dns_question
+	{
+		unsigned short qtype;
+		unsigned short qclass;
+	} DNS_QUERY_DATA;
+
+	//Constant sized fields of the resource record structure
+	typedef struct dns_res_data
+	{
+		unsigned short type;
+		unsigned short _class;
+		unsigned int ttl;
+		unsigned short data_len;
+	} DNS_ANSWER_DATA;
 	typedef struct ethernet_header
 	{
 		UCHAR dest[6];
 		UCHAR source[6];
 		USHORT type;
 	}   ETHER_HDR, *PETHER_HDR, FAR* LPETHER_HDR, ETHERHeader;
+
+	typedef struct TLS_HEADER
+	{
+		unsigned char contentType; // Time to live
+		unsigned short version;
+		unsigned short length;
+	}TLS_HDR;

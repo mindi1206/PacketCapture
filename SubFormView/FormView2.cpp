@@ -23,6 +23,26 @@ CFormView2::~CFormView2()
 void CFormView2::DoDataExchange(CDataExchange* pDX)
 {
 	CFormView::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_EDIT59, udp_srcPort);
+	DDX_Control(pDX, IDC_EDIT51, udp_destPort);
+	DDX_Control(pDX, IDC_EDIT39, udp_length);
+	DDX_Control(pDX, IDC_EDIT38, udp_checksum);
+	DDX_Control(pDX, IDC_EDIT4, udp_data);
+
+	DDX_Control(pDX, IDC_UDP_VER, IPVersion);
+	DDX_Control(pDX, IDC_UDP_IHL, IHL);
+	DDX_Control(pDX, IDC_UDP_TOS, TOS);
+	DDX_Control(pDX, IDC_UDP_TL, TotalLength);
+	DDX_Control(pDX, IDC_UDP_IDENTIFICATION, Identification);
+	DDX_Control(pDX, IDC_UDP_MF, MoreFrag);
+	DDX_Control(pDX, IDC_UDP_DF, DontFrag);
+	DDX_Control(pDX, IDC_UDP_RZ, ReservedZero);
+	DDX_Control(pDX, IDC_UDP_FOFFSET, FragOffset);
+	DDX_Control(pDX, IDC_UDP_TTL, TTL);
+	DDX_Control(pDX, IDC_UDP_PROTOCOL, Protocol);
+	DDX_Control(pDX, IDC_UDP_HCHECKSUM, HeaderChecksum);
+	DDX_Control(pDX, IDC_UDP_SRCADDR, SourceAddress);
+	DDX_Control(pDX, IDC_UDP_DESTADDR, DestinationAddress);
 }
 
 BEGIN_MESSAGE_MAP(CFormView2, CFormView)

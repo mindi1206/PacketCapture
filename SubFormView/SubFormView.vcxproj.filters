@@ -54,6 +54,12 @@
     <ClInclude Include="CNicSelector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DNSParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InfoGen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SubFormView.cpp">
@@ -81,6 +87,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CNicSelector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DNSParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InfoGen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

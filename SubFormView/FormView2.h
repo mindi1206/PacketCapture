@@ -27,6 +27,26 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	CEdit udp_srcPort;
+	CEdit udp_destPort;
+	CEdit udp_length;
+	CEdit udp_checksum;
+	CEdit udp_data;
+
+	CEdit IPVersion;
+	CEdit IHL;
+	CEdit TOS;
+	CEdit TotalLength;
+	CEdit Identification;
+	CEdit MoreFrag;
+	CEdit DontFrag;
+	CEdit ReservedZero;
+	CEdit FragOffset;
+	CEdit TTL;
+	CEdit Protocol;
+	CEdit HeaderChecksum;
+	CEdit SourceAddress;
+	CEdit DestinationAddress;
 };
 
 

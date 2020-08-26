@@ -6,15 +6,15 @@
 #include "SubFormView.h"
 #include "SubFormViewDlg.h"
 #include "afxdialogex.h"
-#include <iostream>
 #include "CoreUnit.h"
 #include <process.h>
 #include <tchar.h>
 #include "CNicSelector.h"
+#include "InfoGen.h"
+#include "DNSParser.h"
 #include <malloc.h>
 #include <algorithm>
 
-#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -151,7 +151,7 @@ BOOL CSubFormViewDlg::OnInitDialog()
 
 	CRect rc;
 	GetClientRect(&rc);
-	rc.top += 400;
+	rc.top += 310;
 	rc.left += 50;
 
 	CCreateContext cc;
@@ -207,8 +207,8 @@ BOOL CSubFormViewDlg::OnInitDialog()
 	*/
 
 	mCombo.InsertString(0, _T("---------"));
-	mCombo.InsertString(1, _T("HTTP"));
-	mCombo.InsertString(2, _T("DNS"));
+	mCombo.InsertString(1, _T("TCP"));
+	mCombo.InsertString(2, _T("UDP"));
 	mCombo.InsertString(3, _T("ICMP"));
 	mCombo.SetCurSel(0);
 	
@@ -232,7 +232,6 @@ BOOL CSubFormViewDlg::OnInitDialog()
 
 	this->SetWindowPos(NULL, 0, 0, winRect.Width(), 720, SWP_NOREPOSITION);*/
 
-	std::cout << "Testing onInitDialog";
 
 	CoreUnit* core_unit = CoreUnit::getInstance();
 
@@ -370,7 +369,7 @@ void CSubFormViewDlg::OnCbnSelchangeCombo()
 		m_pFormView1->ShowWindow(SW_SHOW);
 		m_pFormView2->ShowWindow(SW_HIDE);
 		m_pFormView3->ShowWindow(SW_HIDE);
-
+		
 		for (int i = 0; i < cnt; i++) {
 			CString s_num = listdata[i].idx; 
 			CString s_time = listdata[i].time;
@@ -533,11 +532,8 @@ HBRUSH CSubFormViewDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 }
 
 unsigned WINAPI startCaptureThread(void* arg) {
-	std::cout << "startCapture!\n";
 	NicDecisionParam* param = (NicDecisionParam*)arg;
 
-	std::cout << "param.decision : " << param->decision << std::endl;
-	std::cout << "param.local : " << param->local << std::endl;
 
 	CoreUnit* core_unit = CoreUnit::getInstance();
 	core_unit->startCapture(param->local, param->decision);
@@ -553,6 +549,7 @@ void CSubFormViewDlg::OnBnClickedButtonStart()
 	//startBtn
 	CoreUnit* coreUnit = CoreUnit::getInstance();
 	coreUnit->clearPackerVector();
+	CoreUnit::timeVector.clear();
 	mList.DeleteAllItems();
 	listdata.clear();
 	CButton* start = (CButton*)GetDlgItem(IDC_BUTTON_START);
@@ -574,14 +571,11 @@ void CSubFormViewDlg::OnBnClickedButtonStart()
 		printf("Error : %d", WSAGetLastError());
 		return;
 	}
-	printf("\nHost name : %s \n", hostname);//현재 컴퓨터의 이름
 
 	//Retrive the available IPs of the local host
 	local = gethostbyname(hostname);
-	printf("\nAvailable Network Interfaces : \n");
 	if (local == NULL)
 	{
-		printf("Error : %d.\n", WSAGetLastError());
 		return;
 	}
 	nicSelectorModal.setLocal(local);
@@ -605,7 +599,6 @@ void CSubFormViewDlg::OnBnClickedButtonStart()
 
 	CoreUnit::setThreadHandle((HANDLE)_beginthreadex(NULL, 0, startCaptureThread, (void*)param, 0, NULL));
 	if (CoreUnit::captureThread == NULL) {
-		std::cout << "capture thread init failed!\n";
 		return;
 	}
 
@@ -615,25 +608,62 @@ char* protocolParser(int protocol) {
 	switch (protocol) //Check the Protocol and do accordingly...
 	{
 	case 1: //ICMP Protocol
-		std::cout << "ICMP\n";
+		
 		return "ICMP";
 	case 2: //IGMP Protocol
-		std::cout << "IGMP\n";
+		
 		return "IGMP";
 	case 6: //TCP Protocol
-		std::cout << "TCP\n";
+		
 		return "TCP";
 	case 17: //UDP Protocol
-		std::cout << "UDP\n";
+		
 		return "UDP";
 	default: //Some Other Protocol like ARP etc.
 		return "UNKNOWN";
 	}
 }
+
+CString infoTextGenerator(IPV4_HDR* iphdr) {
+	CString infoText;
+	UDP_HDR* udpheader = NULL;
+
+	switch (iphdr->ip_protocol)
+	{
+	case 1: // ICMP
+		infoText = InfoGen::icmpInfo(iphdr);
+		return infoText;
+	case 2: // IGMP
+		infoText = _T("IGMP INFO");
+		return infoText;
+	case 6: // TCP
+		return InfoGen::tcpInfo(iphdr);
+	case 17: // UDP
+		udpheader = (UDP_HDR*)((char*)iphdr + sizeof(IPV4_HDR));
+
+		if (ntohs(udpheader->source_port) == 53 || ntohs(udpheader->dest_port) == 53) {
+			// DNS 헤더 시작
+			DNS_HDR* dnshdr = (DNS_HDR*)((char*)udpheader + sizeof(UDP_HDR));
+			if (dnshdr->qry_res_flag == 0) {	// Query
+				infoText = InfoGen::dnsReqInfo(dnshdr);
+			}
+			else {								// Answer
+				infoText = InfoGen::dnsResInfo(dnshdr);
+			}
+		}
+		else {
+			infoText = InfoGen::udpInfo(iphdr);
+		}
+		return infoText;
+	default:
+		return _T("UNKNOWN INFO");
+	}
+}
+
 void CSubFormViewDlg::OnBnClickedButtonStop()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	std::cout << "endCapture\n";
+	
 	CoreUnit* core_unit = CoreUnit::getInstance();
 	core_unit->stopCapture();
 
@@ -641,14 +671,16 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 
 	std::vector<char*>::iterator iter;
 	std::vector<char*>::iterator subIter;
-	std::vector<char*> v = CoreUnit::packetVector;
+	
+	std::vector<double*>::iterator timeiter;
+	std::vector<double*> t = CoreUnit::timeVector;
 	CString strProtocol;
 	int i = 1;
 	struct sockaddr_in sourceAddr;
 	struct sockaddr_in destAddr;
 	char buffer[65536];
-
-	for (iter = v.begin(); iter != v.end(); ++iter, i++) {
+	timeiter = t.begin();
+	for (iter = CoreUnit::packetVector.begin(); iter != CoreUnit::packetVector.end(); ++iter, i++) {
 		char* packet = *iter;
 		IPV4_HDR* iphdr = (IPV4_HDR*)packet;
 		
@@ -677,7 +709,7 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 
 			if (tcpheader->syn == 1 && tcpheader->ack == 1) {
 				int j = 1;
-				for (subIter = v.begin(); subIter != iter; ++subIter, j++) {
+				for (subIter = CoreUnit::packetVector.begin(); subIter != iter; ++subIter, j++) {
 					//처음부터, iter(현재 아우터 루프에서 가리키는 곳까지 순회)
 					char* subPacket = *subIter;
 					IPV4_HDR* subIphdr = (IPV4_HDR*)subPacket;
@@ -697,10 +729,8 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 								if (iphdr->ip_destaddr == subIphdr->ip_srcaddr && tcpheader->dest_port == subTcpheader->source_port) {
 									//목적지가 검사대상의 소스라면, 둘을 스왑한다.
 
-
-									printf("Do a Swap Operation!\n");
 									//iter_swap(v.begin() + (i - 1), v.begin() + (j - 1));
-									char* temp = v[j - 1];
+									char* temp = CoreUnit::packetVector[j - 1];
 									CoreUnit::packetVector[j - 1] = CoreUnit::packetVector[i - 1];
 									CoreUnit::packetVector[i - 1] = temp;
 									break;
@@ -713,7 +743,7 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 		}
 	}//outer Loop
 	i = 1;
-	for (iter = v.begin(); iter != v.end(); ++iter,i++) {
+	for (iter = CoreUnit::packetVector.begin(); iter != CoreUnit::packetVector.end(); ++iter,i++, ++timeiter) {
 		char* packet = *iter;
 		IPV4_HDR* iphdr = (IPV4_HDR*)packet;
 		//IPV4_HDR* myIphdr = (IPV4_HDR*)packet;
@@ -727,7 +757,11 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 			idxStr.Format(_T("%d"), i);
 			mList.InsertItem(i - 1, idxStr);
 			// 시
-			mList.SetItemText(i - 1, 1, _T("time"));
+			CString time;
+			double Ptime = **timeiter;
+			time.Format(_T("%.3f"), Ptime);
+
+			mList.SetItemText(i - 1, 1, time);
 
 			//==================
 			unsigned short iphdrlen = iphdr->ip_header_len * 4;
@@ -754,9 +788,11 @@ void CSubFormViewDlg::OnBnClickedButtonStop()
 			CString total_length = (CString)buffer;
 
 			mList.SetItemText(i - 1, 5, total_length);
-			mList.SetItemText(i - 1, 6, _T("packetInfo"));
 
-			listdata.push_back(ListData(idxStr, _T("time"), srcIp, destIp, strProtocol, total_length, _T("packetInfo")));
+			CString packetInfo = infoTextGenerator(iphdr);
+			mList.SetItemText(i - 1, 6, packetInfo);
+
+			listdata.push_back(ListData(idxStr, time, srcIp, destIp, strProtocol, total_length, packetInfo));
 		}
 	}
 
@@ -782,6 +818,7 @@ void CSubFormViewDlg::OnLvnInsertitemListPacket(NMHDR *pNMHDR, LRESULT *pResult)
 void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	CFont m_LocalFont;
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
 	int nItem = pNMLV->iItem;
@@ -792,13 +829,18 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 
 
 	std::vector<char*>::iterator iter;
-	std::vector<char*> v = CoreUnit::packetVector;
 
-	char* packet = v[v_index];
+	char* packet = CoreUnit::packetVector[v_index];
 	IPV4_HDR* iphdr = (IPV4_HDR*)packet;
 	iphdrlen = iphdr->ip_header_len * 4;
 
+	unsigned short sizeOfIcmp = 8;
+
 	TCP_HDR* tcpheader = (TCP_HDR*)(packet + iphdrlen);
+	UDP_HDR* udpheader = (UDP_HDR*)(packet + iphdrlen);
+	ICMP_HDR* icmpheader = (ICMP_HDR*)(packet + iphdrlen);
+	IPV4_HDR* afteriphdr = (IPV4_HDR*)(packet + iphdrlen + sizeOfIcmp);
+	ICMP_HDR* afterIcmpheader = (ICMP_HDR*)(packet + iphdrlen + sizeOfIcmp + afteriphdr->ip_header_len * 4);
 	//m_pFormView1->TCP_SRCPORT.SetWindowTextW((CString)(char)ntohs(tcpheader->source_port));
 	
 	// 만약 콤보박스 선택이 HTTP 이면
@@ -856,7 +898,7 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 		str.Format(_T("%d"), ntohs(tcpheader->checksum));
 		m_pFormView1->TCP_CHEKSUM.SetWindowTextW(str);
 
-		str.Format(_T("%d"),tcpheader->urgent_pointer);
+		str.Format(_T("%d"), ntohs(tcpheader->urgent_pointer));
 		m_pFormView1->TCP_URG.SetWindowTextW(str);
 
 		//IP Header
@@ -872,7 +914,7 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 		str.Format(_T("%d"), ntohs(iphdr->ip_total_length));
 		m_pFormView1->TotalLength.SetWindowTextW(str);
 
-		str.Format(_T("%d"), iphdr->ip_id);
+		str.Format(_T("%d"), ntohs(iphdr->ip_id));
 		m_pFormView1->Identification.SetWindowTextW(str);
 
 		str.Format(_T("%d"), iphdr->ip_more_fragment);
@@ -893,7 +935,7 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 		str.Format(_T("%d"), iphdr->ip_protocol);
 		m_pFormView1->Protocol.SetWindowTextW(str);
 
-		str.Format(_T("%d"), iphdr->ip_checksum);
+		str.Format(_T("%d"), ntohs(iphdr->ip_checksum));
 		m_pFormView1->HeaderChecksum.SetWindowTextW(str);
 		
 		memset(&tempAddr, 0, sizeof(tempAddr));
@@ -916,11 +958,264 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 		// DNS
 	case 2:
 		//m_pFormView2->ShowWindow(SW_SHOW);
+		str.Format(_T("%u"), ntohs(udpheader->source_port));
+		m_pFormView2->udp_srcPort.SetWindowTextW(str);
+		str.Format(_T("%u"), ntohs(udpheader->dest_port));
+		m_pFormView2->udp_destPort.SetWindowTextW(str);
+
+		str.Format(_T("%u"), ntohs(udpheader->udp_length));
+		m_pFormView2->udp_length.SetWindowTextW(str);
+		str.Format(_T("%u"), ntohs(udpheader->udp_checksum));
+		m_pFormView2->udp_checksum.SetWindowTextW(str);
+
+		// 폰트 설정
+		m_LocalFont.CreatePointFont(100, _T("Consolas"));
+		m_pFormView2->udp_data.SetFont(&m_LocalFont);
+
+		// is DNS
+		if (ntohs(udpheader->source_port) == 53 || ntohs(udpheader->dest_port) == 53) {
+			DNS_HDR* dnshdr = (DNS_HDR*)((char*)udpheader + sizeof(UDP_HDR));
+			if (dnshdr->qry_res_flag == 0) {	// Request
+				m_pFormView2->udp_data.SetWindowTextW(InfoGen::dnsReqData(dnshdr));
+			}
+			else {								// Response
+				m_pFormView2->udp_data.SetWindowTextW(InfoGen::dnsResData(dnshdr));
+			}
+
+		}
+		else { // is unknown udp packets
+			m_pFormView2->udp_data.SetWindowTextW(InfoGen::udpData(udpheader));
+
+		}
+		str.Format(_T("%d"), iphdr->ip_version);
+		m_pFormView2->IPVersion.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_header_len);
+		m_pFormView2->IHL.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_tos);
+		m_pFormView2->TOS.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(iphdr->ip_total_length));
+		m_pFormView2->TotalLength.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(iphdr->ip_id));
+		m_pFormView2->Identification.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_more_fragment);
+		m_pFormView2->MoreFrag.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_dont_fragment);
+		m_pFormView2->DontFrag.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_reserved_zero);
+		m_pFormView2->ReservedZero.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_frag_offset1);
+		m_pFormView2->FragOffset.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_ttl);
+		m_pFormView2->TTL.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_protocol);
+		m_pFormView2->Protocol.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(iphdr->ip_checksum));
+		m_pFormView2->HeaderChecksum.SetWindowTextW(str);
+
+		memset(&tempAddr, 0, sizeof(tempAddr));
+		tempAddr.sin_addr.s_addr = iphdr->ip_srcaddr;
+		tempIp = inet_ntoa(tempAddr.sin_addr);
+		str = (CString)tempIp;
+		m_pFormView2->SourceAddress.SetWindowTextW(str);
+
+		memset(&tempAddr, 0, sizeof(tempAddr));
+		tempAddr.sin_addr.s_addr = iphdr->ip_destaddr;
+		tempIp = inet_ntoa(tempAddr.sin_addr);
+		str = (CString)tempIp;
+		m_pFormView2->DestinationAddress.SetWindowTextW(str);
 
 		break;
 		// ICMP
 	case 3:
 		//m_pFormView3->ShowWindow(SW_SHOW);
+		str.Format(_T("%d"), iphdr->ip_version);
+		m_pFormView3->IPVersion.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_header_len);
+		m_pFormView3->IHL.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_tos);
+		m_pFormView3->TOS.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(iphdr->ip_total_length));
+		m_pFormView3->TotalLength.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(iphdr->ip_id));
+		m_pFormView3->Identification.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_more_fragment);
+		m_pFormView3->MoreFrag.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_dont_fragment);
+		m_pFormView3->DontFrag.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_reserved_zero);
+		m_pFormView3->ReservedZero.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_frag_offset1);
+		m_pFormView3->FragOffset.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_ttl);
+		m_pFormView3->TTL.SetWindowTextW(str);
+
+		str.Format(_T("%d"), iphdr->ip_protocol);
+		m_pFormView3->Protocol.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(iphdr->ip_checksum));
+		m_pFormView3->HeaderChecksum.SetWindowTextW(str);
+
+		memset(&tempAddr, 0, sizeof(tempAddr));
+		tempAddr.sin_addr.s_addr = iphdr->ip_srcaddr;
+		tempIp = inet_ntoa(tempAddr.sin_addr);
+		str = (CString)tempIp;
+		m_pFormView3->SourceAddress.SetWindowTextW(str);
+
+		memset(&tempAddr, 0, sizeof(tempAddr));
+		tempAddr.sin_addr.s_addr = iphdr->ip_destaddr;
+		tempIp = inet_ntoa(tempAddr.sin_addr);
+		str = (CString)tempIp;
+		m_pFormView3->DestinationAddress.SetWindowTextW(str);
+
+		str.Format(_T("%d"), icmpheader->type);
+		m_pFormView3->Type.SetWindowTextW(str);
+
+		str.Format(_T("%d"), icmpheader->code);
+		m_pFormView3->Code.SetWindowTextW(str);
+
+		str.Format(_T("%d"), ntohs(icmpheader->checksum));
+		m_pFormView3->CheckSum.SetWindowTextW(str);
+
+		str.Format(_T("%u"), ntohs(icmpheader->id));
+		m_pFormView3->id.SetWindowTextW(str);
+
+		str.Format(_T("%u"), ntohs(icmpheader->seq));
+		m_pFormView3->seq.SetWindowTextW(str);
+
+
+		
+
+		//=======================
+		//After IP Hdr
+		//=======================
+
+		if (icmpheader->type == 11 || icmpheader->type == 3) {
+			str.Format(_T("%d"), afteriphdr->ip_version);
+			m_pFormView3->IPVersion2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_header_len);
+			m_pFormView3->IHL2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_tos);
+			m_pFormView3->TOS2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), ntohs(afteriphdr->ip_total_length));
+			m_pFormView3->TotalLength2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), ntohs(afteriphdr->ip_id));
+			m_pFormView3->Identification2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_more_fragment);
+			m_pFormView3->MoreFrag2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_dont_fragment);
+			m_pFormView3->DontFrag2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_reserved_zero);
+			m_pFormView3->ReservedZero2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_frag_offset1);
+			m_pFormView3->FragOffset2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_ttl);
+			m_pFormView3->TTL2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afteriphdr->ip_protocol);
+			m_pFormView3->Protocol2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), ntohs(afteriphdr->ip_checksum));
+			m_pFormView3->HeaderChecksum2.SetWindowTextW(str);
+			//=======================
+			//After ICMP
+			str.Format(_T("%d"), afterIcmpheader->type);
+			m_pFormView3->Type2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), afterIcmpheader->code);
+			m_pFormView3->Code2.SetWindowTextW(str);
+
+			str.Format(_T("%d"), ntohs(afterIcmpheader->checksum));
+			m_pFormView3->CheckSum2.SetWindowTextW(str);
+
+			str.Format(_T("%u"), ntohs(afterIcmpheader->id));
+			m_pFormView3->id2.SetWindowTextW(str);
+
+			str.Format(_T("%u"), ntohs(afterIcmpheader->seq));
+			m_pFormView3->seq2.SetWindowTextW(str);
+
+
+			memset(&tempAddr, 0, sizeof(tempAddr));
+			tempAddr.sin_addr.s_addr = afteriphdr->ip_srcaddr;
+			tempIp = inet_ntoa(tempAddr.sin_addr);
+			str = (CString)tempIp;
+			m_pFormView3->SourceAddress2.SetWindowTextW(str);
+
+			memset(&tempAddr, 0, sizeof(tempAddr));
+			tempAddr.sin_addr.s_addr = afteriphdr->ip_destaddr;
+			tempIp = inet_ntoa(tempAddr.sin_addr);
+			str = (CString)tempIp;
+			m_pFormView3->DestinationAddress2.SetWindowTextW(str);
+		}
+		else {
+			m_pFormView3->IPVersion2.SetWindowTextW(_T(""));
+
+			m_pFormView3->IHL2.SetWindowTextW(_T(""));
+
+			m_pFormView3->TOS2.SetWindowTextW(_T(""));
+
+			m_pFormView3->TotalLength2.SetWindowTextW(_T(""));
+
+			m_pFormView3->Identification2.SetWindowTextW(_T(""));
+
+			m_pFormView3->MoreFrag2.SetWindowTextW(_T(""));
+
+			m_pFormView3->DontFrag2.SetWindowTextW(_T(""));
+
+			m_pFormView3->ReservedZero2.SetWindowTextW(_T(""));
+
+			m_pFormView3->FragOffset2.SetWindowTextW(_T(""));
+
+			m_pFormView3->TTL2.SetWindowTextW(_T(""));
+
+			m_pFormView3->Protocol2.SetWindowTextW(_T(""));
+
+			m_pFormView3->HeaderChecksum2.SetWindowTextW(_T(""));
+			//=======================
+			//After ICMP
+			m_pFormView3->Type2.SetWindowTextW(_T(""));
+
+			m_pFormView3->Code2.SetWindowTextW(_T(""));
+
+			m_pFormView3->CheckSum2.SetWindowTextW(_T(""));
+
+			m_pFormView3->SourceAddress2.SetWindowTextW(_T(""));
+
+			m_pFormView3->DestinationAddress2.SetWindowTextW(_T(""));
+
+			m_pFormView3->id2.SetWindowTextW(_T(""));
+
+			m_pFormView3->seq2.SetWindowTextW(_T(""));
+		}
+
 	
 		break;
 	default:
@@ -929,7 +1224,7 @@ void CSubFormViewDlg::OnLvnItemchangedListPacket(NMHDR *pNMHDR, LRESULT *pResult
 
 	CString strProtocol;
 	int i = 1;
-	struct sockaddr_in source, dest;
+	//struct sockaddr_in source, dest;
 	
 	*pResult = 0;
 }
@@ -951,7 +1246,6 @@ void CSubFormViewDlg::OnBnClickedButtonSearch()
 	int cnt;
 	CString strSearch_destip, strSearch_srcip;
 	cnt = mList.GetItemCount();
-	printf("cnt: %d\n", cnt);
 
 	std::vector<ListData> sList;
 
@@ -1012,7 +1306,6 @@ void CSubFormViewDlg::OnBnClickedButtonSearch()
 	for (iter = sList.begin(); iter != sList.end(); iter++, i++) {
 		ListData s = *iter;
 		
-		printf("%d: %s %s %s\n", _ttoi(s.idx), s.destip, s.srcip, s.protocol);
 		mList.InsertItem(i, s.idx);
 		
 		mList.SetItemText(i, 1, s.time);
@@ -1050,47 +1343,104 @@ void CSubFormViewDlg::httpPayloadPrinter(char* packet,
 											TCP_HDR* tcpheader, 
 											IPV4_HDR* iphdr, 
 											CFormView1* m_pFormView1) {
-	char a, line[17], c;
-	int j;
+	char c;
 	char* httpPayload = packet + iphdrlen + tcpheader->data_offset * 4;
 	//loop over each character and print
 
 	int Size = ntohs(iphdr->ip_total_length) - tcpheader->data_offset * 4 - iphdr->ip_header_len * 4;
 	CString printBuffer;
 
-	//페이로드 영역 초기화
-	m_pFormView1->MessagePayload.SetWindowTextW(_T(""));
-	printf("Size : %d\n",Size);
-	if (Size > 5) {
-		char tester[6] = {'\0'};
-		for (int i = 0; i < 5; i ++) {
-			tester[i] = httpPayload[i];
-		}
-		printf("tester : %s\n",tester);
-		if (strcmp(tester, "HTTP/") && strcmp(tester, "GET /") && strcmp(tester, "POST/")) {
-			m_pFormView1->MessagePayload.SetWindowTextW(_T("RESOURCE DATA PAYLOAD OF PREVIOUS HTTP PACKET"));
-			return;
-		}
-	}
 
-	
-
-	CString temp;
-	for (int i = 0; i < Size; i++)
-	{
+	if (ntohs(tcpheader->dest_port) == 443 || ntohs(tcpheader->source_port) == 443) {
+		//https 처리
+		CString temp;
+		m_pFormView1->MessagePayload.SetWindowTextW(_T(""));
 		
-		if (httpPayload[i] == '\r' && httpPayload[i+1] == '\n') {
-			if (httpPayload[i+2] == '\r' && httpPayload[i+3] == '\n') {
-				//End of HTTP Header
-				break;
+		if (Size > 0) {
+			TLS_HDR* tlsHeader = (TLS_HDR*)httpPayload;
+					
+			switch (tlsHeader->version) {
+				case 0:
+					temp = "SSL v3\r\n";
+					break;
+				case 1:
+					temp = "TLS 1.0\r\n";
+					break;
+				case 2:
+					temp = "TLS 1.1\r\n";
+					break;
+				case 3:
+					temp = "TLS 1.2\r\n";
+					break;
+				case 4:
+					temp = "TLS 1.3\r\n";
+					break;
+				default:
+					temp = "UNKNOWN";
+					break;
+			}
+
+			if (tlsHeader->contentType == 23 && temp.Compare(_T("UNKNOWN")) != 0) {
+				CString applicationNum;
+				applicationNum.Format(_T("Application Data (%d)\r\n"), tlsHeader->contentType);
+				printBuffer += applicationNum;//Application 입력
+				printBuffer += temp;//TLS 버전 입력
+				temp.Format(_T("Length : %d\r\n"), tlsHeader->length);//길이 입력
+				printBuffer += temp;
+
+				httpPayload = packet + iphdrlen + tcpheader->data_offset * 4 + sizeof(TLS_HEADER);
+				int Size = ntohs(iphdr->ip_total_length) - tcpheader->data_offset * 4 - iphdr->ip_header_len * 4 - sizeof(TLS_HEADER);
+			}
+			else {
+				httpPayload = packet + iphdrlen + tcpheader->data_offset * 4;
+				int Size = ntohs(iphdr->ip_total_length) - tcpheader->data_offset * 4 - iphdr->ip_header_len * 4;
+			}
+
+			printBuffer += "\r\nEncrypted Payload\r\n===============\r\n";
+		}
+
+		for (int i = 0; i < Size; i++)
+		{
+
+			c = httpPayload[i];
+
+			temp.Format(_T(" %.2x"), (unsigned char)c);
+			printBuffer += temp;
+
+			if (((i + 1) % 8) == 0) {
+				printBuffer += "\r\n";
 			}
 		}
-		c = httpPayload[i];
-		temp.Format(_T("%c"), c);
-		printBuffer += temp;
+	}
+	else {
+		//페이로드 영역 초기화
+		m_pFormView1->MessagePayload.SetWindowTextW(_T(""));
+		if (Size > 5) {
+			char tester[6] = { '\0' };
+			for (int i = 0; i < 5; i++) {
+				tester[i] = httpPayload[i];
+			}
+			if (strcmp(tester, "HTTP/") && strcmp(tester, "GET /") && strcmp(tester, "POST/")) {
+				m_pFormView1->MessagePayload.SetWindowTextW(_T("RESOURCE DATA PAYLOAD OF PREVIOUS HTTP PACKET"));
+				return;
+			}
+		}
+		CString temp;
+		for (int i = 0; i < Size; i++)
+		{
+
+			if (httpPayload[i] == '\r' && httpPayload[i + 1] == '\n') {
+				if (httpPayload[i + 2] == '\r' && httpPayload[i + 3] == '\n') {
+					//End of HTTP Header
+					break;
+				}
+			}
+			c = httpPayload[i];
+			temp.Format(_T("%c"), c);
+			printBuffer += temp;
+		}
 	}
 	
-	//fprintf(logfile, "\n");
 	CString str = (CString)printBuffer;
 	if (str.GetLength() > 0) {
 		printBuffer += "\n\0";

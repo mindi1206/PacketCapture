@@ -5,7 +5,6 @@
 #include "SubFormView.h"
 #include "CNicSelector.h"
 #include "afxdialogex.h"
-#include <iostream>
 
 
 // CNicSelector 대화 상자
@@ -43,7 +42,6 @@ BOOL CNicSelector::OnInitDialog() {
 	for (int i = 0; local->h_addr_list[i] != 0; ++i)
 	{//감지 가능한 인터페이스 목록을 출력
 		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-		printf("Interface Number : %d Address : %s\n", i, inet_ntoa(addr));
 		CString idxStr;
 		idxStr.Format(_T("%d"), i);
 		mNicList.InsertItem(i,idxStr);
@@ -51,7 +49,6 @@ BOOL CNicSelector::OnInitDialog() {
 		mNicList.SetItemText(i, 1, addrStr);
 	}
 
-	//printf("Enter the interface number you would like to sniff : ");
 	//scanf_s("%d", &in);//감지할 인터페이스를 사용자로부터 입력받음
 	//========
 
